@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './Maps.css';
 
-const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose }) => {
+const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category_id: '',
     layer_id: '',
     icon: '',
-    color: '#e74c3c',
+    color: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,10 +17,9 @@ const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose
       setFormData({
         name: poi.name || '',
         description: poi.description || '',
-        category_id: poi.category?.id || '',
-        layer_id: poi.layer?.id || '',
+        layer_id: poi.layer?.id || poi.layer_id || '',
         icon: poi.icon || '',
-        color: poi.color || poi.category_color || '#e74c3c',
+        color: poi.color || '',
       });
     }
   }, [poi]);
@@ -33,21 +31,32 @@ const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose
       [name]: value,
     });
 
-    // Update color when category changes
-    if (name === 'category_id' && value) {
-      const category = categories.find((c) => c.id === parseInt(value));
-      if (category) {
-        setFormData((prev) => ({
-          ...prev,
-          category_id: value,
-          color: category.color,
-        }));
+    // Clear custom color when layer changes (will use layer color)
+    if (name === 'layer_id') {
+      setFormData((prev) => ({
+        ...prev,
+        layer_id: value,
+        color: '', // Reset to use layer color
+      }));
+    }
+  };
+
+  const getDisplayColor = () => {
+    if (formData.color) {
+      return formData.color;
+    }
+    if (formData.layer_id) {
+      const layer = layers.find((l) => l.id === parseInt(formData.layer_id));
+      if (layer) {
+        return layer.color;
       }
     }
+    return '#e74c3c'; // Default red
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(formData);
 
     if (!formData.name.trim()) {
       setError('Please enter a name');
@@ -61,7 +70,6 @@ const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose
       const dataToSave = {
         name: formData.name,
         description: formData.description,
-        category_id: formData.category_id || null,
         layer_id: formData.layer_id || null,
         icon: formData.icon,
         color: formData.color,
@@ -119,40 +127,21 @@ const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="category_id">Category</label>
-              <select
-                id="category_id"
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleChange}
-              >
-                <option value="">No category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="layer_id">Layer</label>
-              <select
-                id="layer_id"
-                name="layer_id"
-                value={formData.layer_id}
-                onChange={handleChange}
-              >
-                <option value="">No layer</option>
-                {layers.map((layer) => (
-                  <option key={layer.id} value={layer.id}>
-                    {layer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="form-group">
+            <label htmlFor="layer_id">Layer / Category</label>
+            <select
+              id="layer_id"
+              name="layer_id"
+              value={formData.layer_id}
+              onChange={handleChange}
+            >
+              <option value="">Uncategorized</option>
+              {layers.map((layer) => (
+                <option key={layer.id} value={layer.id}>
+                  {layer.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">
@@ -162,11 +151,23 @@ const PoiModal = ({ poi, position, categories, layers, onSave, onDelete, onClose
                 type="color"
                 id="color"
                 name="color"
-                value={formData.color}
+                value={getDisplayColor()}
                 onChange={handleChange}
               />
-              <span className="color-value">{formData.color}</span>
+              <span className="color-value">{getDisplayColor()}</span>
+              {formData.color && (
+                <button
+                  type="button"
+                  className="btn-clear-color"
+                  onClick={() => setFormData({ ...formData, color: '' })}
+                >
+                  Use layer color
+                </button>
+              )}
             </div>
+            <small className="color-hint">
+              {formData.color ? 'Custom color' : 'Using layer color'}
+            </small>
           </div>
 
           {position && (

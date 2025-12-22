@@ -3,8 +3,8 @@ import { mapsApi } from '../../api';
 import './Maps.css';
 
 const LayerPanel = ({
-  layers,
-  visibleLayers,
+  layers = [],
+  visibleLayers = new Set(),
   onToggleLayer,
   mapId,
   onLayersChange,
@@ -15,7 +15,8 @@ const LayerPanel = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#2ecc71',
+    color: '#3498db',
+    icon: 'marker',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +25,8 @@ const LayerPanel = ({
     setFormData({
       name: '',
       description: '',
-      color: '#2ecc71',
+      color: '#3498db',
+      icon: 'marker',
     });
     setShowAddForm(false);
     setEditingLayer(null);
@@ -62,7 +64,7 @@ const LayerPanel = ({
       resetForm();
       onLayersChange();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to save layer');
+      setError(err.response?.data?.detail || err.response?.data?.name?.[0] || 'Failed to save layer');
     } finally {
       setLoading(false);
     }
@@ -72,14 +74,15 @@ const LayerPanel = ({
     setFormData({
       name: layer.name,
       description: layer.description || '',
-      color: layer.color,
+      color: layer.color || '#3498db',
+      icon: layer.icon || 'marker',
     });
     setEditingLayer(layer);
     setShowAddForm(true);
   };
 
   const handleDelete = async (layerId) => {
-    if (!window.confirm('Delete this layer? POIs in this layer will become uncategorized.')) {
+    if (!window.confirm('Delete this layer/category? POIs in this layer will become uncategorized.')) {
       return;
     }
 
@@ -94,7 +97,7 @@ const LayerPanel = ({
   return (
     <div className="layer-panel">
       <div className="panel-header">
-        <h3>Layers</h3>
+        <h3>Layers / Categories</h3>
         <button className="panel-close" onClick={onClose}>
           ✕
         </button>
@@ -103,7 +106,7 @@ const LayerPanel = ({
       {error && <div className="alert alert-error small">{error}</div>}
 
       <div className="layer-list">
-        {/* Default layer for uncategorized POIs */}
+        {/* Default layer for POIs without a layer */}
         <div className="layer-item">
           <label className="layer-checkbox">
             <input
@@ -129,7 +132,7 @@ const LayerPanel = ({
               />
               <span
                 className="layer-color"
-                style={{ backgroundColor: layer.color }}
+                style={{ backgroundColor: layer.color || '#3498db' }}
               />
               <span className="layer-name">{layer.name}</span>
               <span className="layer-count">({layer.poi_count})</span>
@@ -157,16 +160,18 @@ const LayerPanel = ({
       {showAddForm ? (
         <form onSubmit={handleSubmit} className="layer-form">
           <div className="form-group">
+            <label>Name:</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Layer name"
+              placeholder="Layer/category name"
               autoFocus
             />
           </div>
           <div className="form-group">
+            <label>Description:</label>
             <input
               type="text"
               name="description"
@@ -177,12 +182,15 @@ const LayerPanel = ({
           </div>
           <div className="form-group">
             <label>Color:</label>
-            <input
-              type="color"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-            />
+            <div className="color-input-row">
+              <input
+                type="color"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+              />
+              <span className="color-value">{formData.color}</span>
+            </div>
           </div>
           <div className="form-actions">
             <button
@@ -206,7 +214,7 @@ const LayerPanel = ({
           className="btn-add-layer"
           onClick={() => setShowAddForm(true)}
         >
-          + Add Layer
+          + Add Layer / Category
         </button>
       )}
     </div>

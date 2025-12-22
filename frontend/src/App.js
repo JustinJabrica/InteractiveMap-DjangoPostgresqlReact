@@ -19,7 +19,6 @@ import MapList from './components/maps/MapList';
 import MapCreate from './components/maps/MapCreate';
 import MapView from './components/maps/MapView';
 import MapEdit from './components/maps/MapEdit';
-import Categories from './components/maps/Categories';
 
 import './App.css';
 
@@ -81,14 +80,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <MapEdit />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/categories"
-                element={
-                  <ProtectedRoute>
-                    <Categories />
                   </ProtectedRoute>
                 }
               />

@@ -1,6 +1,6 @@
 """
 Models for the maps app.
-Implements Map, Category, MapLayer, PointOfInterest, and SharedMap models.
+Implements Map, MapLayer, PointOfInterest, and SharedMap models.
 """
 
 from django.db import models
@@ -8,30 +8,8 @@ from django.contrib.auth.models import User
 
 
 def map_file_path(instance, filename):
+    """Generate upload path for map files."""
     return f'maps/user_{instance.owner.id}/{filename}'
-
-
-class Category(models.Model):
-    """Category model for organizing points of interest."""
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    color = models.CharField(max_length=7, default='#3498db')  # Hex color
-    icon = models.CharField(max_length=50, default='marker')  # Icon name
-    owner = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='categories'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name_plural = 'Categories'
-        ordering = ['name']
-        unique_together = ['name', 'owner']  # Unique category name per user
-
-    def __str__(self):
-        return f"{self.name} ({self.owner.username})"
 
 
 class Map(models.Model):
@@ -69,10 +47,14 @@ class Map(models.Model):
 
 
 class MapLayer(models.Model):
-    """MapLayer model for grouping points of interest into toggleable layers."""
+    """
+    MapLayer model - serves as both layer and category for POIs.
+    Each map has its own set of layers/categories.
+    """
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    color = models.CharField(max_length=7, default='#2ecc71')  # Hex color
+    color = models.CharField(max_length=7, default='#3498db')  # Hex color
+    icon = models.CharField(max_length=50, default='marker')  # Icon name
     map = models.ForeignKey(
         Map,
         on_delete=models.CASCADE,
@@ -104,13 +86,6 @@ class PointOfInterest(models.Model):
         on_delete=models.CASCADE,
         related_name='points_of_interest'
     )
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='points_of_interest'
-    )
     layer = models.ForeignKey(
         MapLayer,
         on_delete=models.SET_NULL,
@@ -121,7 +96,7 @@ class PointOfInterest(models.Model):
     # Position on the map (percentage-based for responsiveness)
     x_position = models.DecimalField(max_digits=6, decimal_places=3)  # 0.000 to 100.000
     y_position = models.DecimalField(max_digits=6, decimal_places=3)
-    # Optional custom styling
+    # Optional custom styling (overrides layer styling)
     icon = models.CharField(max_length=50, blank=True)
     color = models.CharField(max_length=7, blank=True)
     created_by = models.ForeignKey(
@@ -139,6 +114,15 @@ class PointOfInterest(models.Model):
 
     def __str__(self):
         return f"{self.name} on {self.map.name}"
+
+    @property
+    def display_color(self):
+        """Return POI color, falling back to layer color."""
+        if self.color:
+            return self.color
+        if self.layer:
+            return self.layer.color
+        return '#e74c3c'  # Default red
 
 
 class SharedMap(models.Model):

@@ -1,34 +1,6 @@
 import api from './axios';
 
 const mapsApi = {
-  // Categories CRUD
-  categories: {
-    list: async () => {
-      const response = await api.get('/maps/categories/');
-      return response.data;
-    },
-
-    get: async (id) => {
-      const response = await api.get(`/maps/categories/${id}/`);
-      return response.data;
-    },
-
-    create: async (categoryData) => {
-      const response = await api.post('/maps/categories/', categoryData);
-      return response.data;
-    },
-
-    update: async (id, categoryData) => {
-      const response = await api.patch(`/maps/categories/${id}/`, categoryData);
-      return response.data;
-    },
-
-    delete: async (id) => {
-      const response = await api.delete(`/maps/categories/${id}/`);
-      return response.data;
-    },
-  },
-
   // Maps CRUD
   maps: {
     list: async () => {
@@ -101,10 +73,11 @@ const mapsApi = {
     },
   },
 
-  // Map Layers CRUD
+  // Map Layers CRUD (layers act as map-specific categories)
   layers: {
-    list: async () => {
-      const response = await api.get('/maps/layers/');
+    list: async (mapId = null) => {
+      const params = mapId ? { map: mapId } : {};
+      const response = await api.get('/maps/layers/', { params });
       return response.data;
     },
 
@@ -156,8 +129,10 @@ const mapsApi = {
       return response.data;
     },
 
-    byCategory: async () => {
-      const response = await api.get('/maps/pois/by_category/');
+    byLayer: async (mapId) => {
+      const response = await api.get('/maps/pois/by_layer/', {
+        params: { map: mapId },
+      });
       return response.data;
     },
   },

@@ -1,10 +1,10 @@
 import React from 'react';
 import './Maps.css';
 
-const PoiList = ({ pois, sortBy, sortOrder, onSortChange, onPoiClick, onClose }) => {
+const PoiList = ({ pois = [], sortBy, sortOrder, onSortChange, onPoiClick, onClose }) => {
   const sortOptions = [
     { value: 'name', label: 'Name' },
-    { value: 'category', label: 'Category' },
+    { value: 'layer', label: 'Layer / Category' },
     { value: 'created_at', label: 'Date Created' },
     { value: 'updated_at', label: 'Date Edited' },
   ];
@@ -17,14 +17,14 @@ const PoiList = ({ pois, sortBy, sortOrder, onSortChange, onPoiClick, onClose })
     onSortChange(sortBy, sortOrder === 'asc' ? 'desc' : 'asc');
   };
 
-  // Group POIs by category if sorting by category
-  const groupedPois = sortBy === 'category'
+  // Group POIs by layer if sorting by layer
+  const groupedPois = sortBy === 'layer'
     ? pois.reduce((acc, poi) => {
-        const categoryName = poi.category_name || 'Uncategorized';
-        if (!acc[categoryName]) {
-          acc[categoryName] = [];
+        const layerName = poi.layer_name || 'Uncategorized';
+        if (!acc[layerName]) {
+          acc[layerName] = [];
         }
-        acc[categoryName].push(poi);
+        acc[layerName].push(poi);
         return acc;
       }, {})
     : null;
@@ -66,25 +66,25 @@ const PoiList = ({ pois, sortBy, sortOrder, onSortChange, onPoiClick, onClose })
           </div>
         ) : groupedPois ? (
           // Grouped view
-          Object.entries(groupedPois).map(([category, categoryPois]) => (
-            <div key={category} className="poi-category-group">
+          Object.entries(groupedPois).map(([layerName, layerPois]) => (
+            <div key={layerName} className="poi-category-group">
               <div className="category-header">
                 <span
                   className="category-color"
                   style={{
-                    backgroundColor: categoryPois[0]?.category_color || '#999',
+                    backgroundColor: layerPois[0]?.layer_color || '#999',
                   }}
                 />
-                <span className="category-name">{category}</span>
-                <span className="category-count">({categoryPois.length})</span>
+                <span className="category-name">{layerName}</span>
+                <span className="category-count">({layerPois.length})</span>
               </div>
               <div className="category-pois">
-                {categoryPois.map((poi) => (
+                {layerPois.map((poi) => (
                   <PoiListItem
                     key={poi.id}
                     poi={poi}
                     onClick={() => onPoiClick(poi)}
-                    showCategory={false}
+                    showLayer={false}
                   />
                 ))}
               </div>
@@ -97,7 +97,7 @@ const PoiList = ({ pois, sortBy, sortOrder, onSortChange, onPoiClick, onClose })
               key={poi.id}
               poi={poi}
               onClick={() => onPoiClick(poi)}
-              showCategory={true}
+              showLayer={true}
             />
           ))
         )}
@@ -106,17 +106,24 @@ const PoiList = ({ pois, sortBy, sortOrder, onSortChange, onPoiClick, onClose })
   );
 };
 
-const PoiListItem = ({ poi, onClick, showCategory }) => {
+const PoiListItem = ({ poi, onClick, showLayer }) => {
+  const getColor = () => {
+    if (poi.color) return poi.color;
+    if (poi.display_color) return poi.display_color;
+    if (poi.layer_color) return poi.layer_color;
+    return '#e74c3c';
+  };
+
   return (
     <div className="poi-list-item" onClick={onClick}>
       <div
         className="poi-list-marker"
-        style={{ backgroundColor: poi.color || poi.category_color || '#e74c3c' }}
+        style={{ backgroundColor: getColor() }}
       />
       <div className="poi-list-info">
         <span className="poi-list-name">{poi.name}</span>
-        {showCategory && poi.category_name && (
-          <span className="poi-list-category">{poi.category_name}</span>
+        {showLayer && poi.layer_name && (
+          <span className="poi-list-category">{poi.layer_name}</span>
         )}
         {poi.description && (
           <span className="poi-list-description">

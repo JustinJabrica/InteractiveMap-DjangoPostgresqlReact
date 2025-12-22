@@ -5,7 +5,6 @@ URL configuration for maps app.
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    CategoryViewSet,
     MapViewSet,
     MapLayerViewSet,
     PointOfInterestViewSet,
@@ -15,7 +14,6 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'maps', MapViewSet, basename='map')
 router.register(r'layers', MapLayerViewSet, basename='layer')
 router.register(r'pois', PointOfInterestViewSet, basename='poi')

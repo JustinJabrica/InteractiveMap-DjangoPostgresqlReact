@@ -183,15 +183,15 @@ cython_debug/
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
+**/node_modules
+**/.pnp
 .pnp.js
 
 # testing
-/coverage
+**/coverage
 
 # production
-/build
+**/build
 
 # misc
 .DS_Store
@@ -204,4 +204,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/media
+# user file uploads
+**/media
+
+# django virtual environment
+**/venv
+
+# all __pycache__ files
+
+__pycache__/

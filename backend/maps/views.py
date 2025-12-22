@@ -11,9 +11,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
-from .models import Category, Map, MapLayer, PointOfInterest, SharedMap
+from .models import Map, MapLayer, PointOfInterest, SharedMap
 from .serializers import (
-    CategorySerializer,
     MapSerializer,
     MapListSerializer,
     MapUpdateSerializer,
@@ -22,22 +21,6 @@ from .serializers import (
     PointOfInterestListSerializer,
     SharedMapSerializer
 )
-
-
-class CategoryViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for Category model.
-    Full CRUD: list, create, retrieve, update, destroy
-    """
-    serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'created_at']
-    ordering = ['name']
-
-    def get_queryset(self):
-        return Category.objects.filter(owner=self.request.user)
 
 
 class MapViewSet(viewsets.ModelViewSet):
@@ -85,8 +68,8 @@ class MapViewSet(viewsets.ModelViewSet):
 
         if sort_by == 'name':
             pois = pois.order_by('name' if sort_order == 'asc' else '-name')
-        elif sort_by == 'category':
-            pois = pois.order_by('category__name' if sort_order == 'asc' else '-category__name')
+        elif sort_by == 'layer':
+            pois = pois.order_by('layer__name' if sort_order == 'asc' else '-layer__name')
         elif sort_by == 'updated_at':
             pois = pois.order_by('updated_at' if sort_order == 'asc' else '-updated_at')
         else:  # created_at
@@ -130,11 +113,13 @@ class MapViewSet(viewsets.ModelViewSet):
 class MapLayerViewSet(viewsets.ModelViewSet):
     """
     ViewSet for MapLayer model.
+    Layers act as map-specific categories for organizing POIs.
     Full CRUD: list, create, retrieve, update, destroy
     """
     serializer_class = MapLayerSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description']
     ordering_fields = ['name', 'order', 'created_at']
     ordering = ['order', 'name']
 
@@ -147,9 +132,16 @@ class MapLayerViewSet(viewsets.ModelViewSet):
             permission__in=['edit', 'admin']
         ).values_list('map_id', flat=True)
 
-        return MapLayer.objects.filter(
+        queryset = MapLayer.objects.filter(
             Q(map_id__in=owned_map_ids) | Q(map_id__in=editable_shared_map_ids)
         )
+
+        # Filter by map if provided
+        map_id = self.request.query_params.get('map', None)
+        if map_id:
+            queryset = queryset.filter(map_id=map_id)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
         # Verify user has permission to add layers to this map
@@ -179,7 +171,7 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
-    ordering_fields = ['name', 'created_at', 'updated_at', 'category__name']
+    ordering_fields = ['name', 'created_at', 'updated_at', 'layer__name']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
@@ -201,11 +193,6 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
         map_id = self.request.query_params.get('map', None)
         if map_id:
             queryset = queryset.filter(map_id=map_id)
-
-        # Filter by category if provided
-        category_id = self.request.query_params.get('category', None)
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
 
         # Filter by layer if provided
         layer_id = self.request.query_params.get('layer', None)
@@ -234,25 +221,32 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'])
-    def by_category(self, request):
-        """Get POIs grouped by category."""
-        queryset = self.get_queryset()
-        categories = Category.objects.filter(owner=request.user)
+    def by_layer(self, request):
+        """Get POIs grouped by layer for a specific map."""
+        map_id = request.query_params.get('map', None)
+        if not map_id:
+            return Response(
+                {"error": "Map ID is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        queryset = self.get_queryset().filter(map_id=map_id)
+        layers = MapLayer.objects.filter(map_id=map_id)
 
         result = []
-        for category in categories:
-            pois = queryset.filter(category=category)
+        for layer in layers:
+            pois = queryset.filter(layer=layer)
             result.append({
-                'category': CategorySerializer(category).data,
+                'layer': MapLayerSerializer(layer).data,
                 'points_of_interest': PointOfInterestListSerializer(pois, many=True).data
             })
 
-        # Include uncategorized POIs
-        uncategorized = queryset.filter(category__isnull=True)
-        if uncategorized.exists():
+        # Include POIs without a layer
+        no_layer = queryset.filter(layer__isnull=True)
+        if no_layer.exists():
             result.append({
-                'category': None,
-                'points_of_interest': PointOfInterestListSerializer(uncategorized, many=True).data
+                'layer': None,
+                'points_of_interest': PointOfInterestListSerializer(no_layer, many=True).data
             })
 
         return Response(result)

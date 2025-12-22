@@ -3,15 +3,7 @@ Admin configuration for maps app.
 """
 
 from django.contrib import admin
-from .models import Category, Map, MapLayer, PointOfInterest, SharedMap
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'owner', 'color', 'created_at']
-    list_filter = ['owner', 'created_at']
-    search_fields = ['name', 'description', 'owner__username']
-    readonly_fields = ['created_at', 'updated_at']
+from .models import Map, MapLayer, PointOfInterest, SharedMap
 
 
 class MapLayerInline(admin.TabularInline):
@@ -43,7 +35,7 @@ class MapAdmin(admin.ModelAdmin):
 
 @admin.register(MapLayer)
 class MapLayerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'map', 'is_visible', 'order', 'poi_count', 'created_at']
+    list_display = ['name', 'map', 'color', 'is_visible', 'order', 'poi_count', 'created_at']
     list_filter = ['map', 'is_visible', 'created_at']
     search_fields = ['name', 'description', 'map__name']
     readonly_fields = ['created_at', 'updated_at']
@@ -51,9 +43,9 @@ class MapLayerAdmin(admin.ModelAdmin):
 
 @admin.register(PointOfInterest)
 class PointOfInterestAdmin(admin.ModelAdmin):
-    list_display = ['name', 'map', 'category', 'layer', 'created_by', 'created_at']
-    list_filter = ['map', 'category', 'layer', 'created_at']
-    search_fields = ['name', 'description', 'map__name', 'category__name']
+    list_display = ['name', 'map', 'layer', 'created_by', 'created_at']
+    list_filter = ['map', 'layer', 'created_at']
+    search_fields = ['name', 'description', 'map__name', 'layer__name']
     readonly_fields = ['created_at', 'updated_at']
 
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { mapsApi, accountsApi } from '../../api/';
+import React, { useState, useEffect, useCallback } from 'react';
+import { mapsApi, accountsApi } from '../../api';
 import './Maps.css';
 
 const ShareModal = ({ mapId, mapName, onClose }) => {
@@ -13,9 +13,18 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const loadSharedUsers = useCallback(async () => {
+    try {
+      const data = await mapsApi.maps.getSharedUsers(mapId);
+      setSharedWith(data);
+    } catch (err) {
+      console.error('Failed to load shared users', err);
+    }
+  }, [mapId]);
+
   useEffect(() => {
     loadSharedUsers();
-  }, [mapId]);
+  }, [loadSharedUsers]);
 
   useEffect(() => {
     const searchUsers = async () => {
@@ -43,15 +52,6 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
     const debounce = setTimeout(searchUsers, 300);
     return () => clearTimeout(debounce);
   }, [searchTerm, sharedWith]);
-
-  const loadSharedUsers = async () => {
-    try {
-      const data = await mapsApi.maps.getSharedUsers(mapId);
-      setSharedWith(data);
-    } catch (err) {
-      console.error('Failed to load shared users', err);
-    }
-  };
 
   const handleShare = async () => {
     if (!selectedUser) return;
@@ -120,31 +120,37 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
               className="share-search-input"
             />
             {searching && <span className="searching">Searching...</span>}
-          </div>
 
-          {searchResults.length > 0 && !selectedUser && (
-            <div className="search-results">
-              {searchResults.map((user) => (
-                <div
-                  key={user.id}
-                  className="search-result-item"
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setSearchTerm(user.username);
-                    setSearchResults([]);
-                  }}
-                >
-                  <span className="user-avatar">
-                    {user.username.charAt(0).toUpperCase()}
-                  </span>
-                  <div className="user-info">
-                    <span className="user-name">{user.username}</span>
-                    <span className="user-email">{user.email}</span>
+            {searchResults.length > 0 && !selectedUser && (
+              <div className="search-results">
+                {searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    className="search-result-item"
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setSearchTerm(user.username);
+                      setSearchResults([]);
+                    }}
+                  >
+                    <span className="user-avatar">
+                      {user.username.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="user-info">
+                      <span className="user-name">{user.username}</span>
+                      <span className="user-email">{user.email}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+
+            {searchTerm.length >= 2 && searchResults.length === 0 && !searching && !selectedUser && (
+              <div className="no-results">
+                No users found matching "{searchTerm}"
+              </div>
+            )}
+          </div>
 
           {selectedUser && (
             <div className="selected-user">

@@ -4,55 +4,34 @@ Serializers for the maps app.
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Category, Map, MapLayer, PointOfInterest, SharedMap
+from .models import Map, MapLayer, PointOfInterest, SharedMap
 
 
 class UserMinimalSerializer(serializers.ModelSerializer):
     """Minimal user serializer for nested representations."""
-
     class Meta:
         model = User
         fields = ['id', 'username', 'email']
 
 
-class CategorySerializer(serializers.ModelSerializer):
-    """Serializer for Category model."""
-    poi_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'description', 'color', 'icon', 'poi_count', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at']
-
-    def get_poi_count(self, obj):
-        return obj.points_of_interest.count()
-
-    def create(self, validated_data):
-        validated_data['owner'] = self.context['request'].user
-        return super().create(validated_data)
-
-
 class MapLayerSerializer(serializers.ModelSerializer):
-    """Serializer for MapLayer model."""
+    """
+    Serializer for MapLayer model.
+    Layers act as categories for POIs within a specific map.
+    """
     poi_count = serializers.ReadOnlyField()
 
     class Meta:
         model = MapLayer
-        fields = ['id', 'name', 'description', 'color', 'map', 'is_visible', 'order', 'poi_count', 'created_at',
-                  'updated_at']
+        fields = [
+            'id', 'name', 'description', 'color', 'icon', 'map',
+            'is_visible', 'order', 'poi_count', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['created_at', 'updated_at']
 
 
 class PointOfInterestSerializer(serializers.ModelSerializer):
     """Serializer for PointOfInterest model."""
-    category = CategorySerializer(read_only=True)
-    category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(),
-        source='category',
-        write_only=True,
-        required=False,
-        allow_null=True
-    )
     layer = MapLayerSerializer(read_only=True)
     layer_id = serializers.PrimaryKeyRelatedField(
         queryset=MapLayer.objects.all(),
@@ -62,12 +41,13 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
         allow_null=True
     )
     created_by = UserMinimalSerializer(read_only=True)
+    display_color = serializers.ReadOnlyField()
 
     class Meta:
         model = PointOfInterest
         fields = [
-            'id', 'name', 'description', 'map', 'category', 'category_id',
-            'layer', 'layer_id', 'x_position', 'y_position', 'icon', 'color',
+            'id', 'name', 'description', 'map', 'layer', 'layer_id',
+            'x_position', 'y_position', 'icon', 'color', 'display_color',
             'created_by', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'created_by']
@@ -76,18 +56,30 @@ class PointOfInterestSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = self.context['request'].user
         return super().create(validated_data)
 
+    def validate(self, data):
+        # Ensure layer belongs to the same map as the POI
+        layer = data.get('layer')
+        map_obj = data.get('map')
+        if layer and map_obj and layer.map_id != map_obj.id:
+            raise serializers.ValidationError({
+                'layer_id': 'Layer must belong to the same map as the point of interest.'
+            })
+        return data
+
 
 class PointOfInterestListSerializer(serializers.ModelSerializer):
     """Lighter serializer for listing POIs."""
-    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
-    category_color = serializers.CharField(source='category.color', read_only=True, allow_null=True)
+    layer_id = serializers.IntegerField(source='layer.id', read_only=True, allow_null=True)
     layer_name = serializers.CharField(source='layer.name', read_only=True, allow_null=True)
+    layer_color = serializers.CharField(source='layer.color', read_only=True, allow_null=True)
+    display_color = serializers.ReadOnlyField()
 
     class Meta:
         model = PointOfInterest
         fields = [
-            'id', 'name', 'description', 'map', 'category_name', 'category_color',
-            'layer_name', 'x_position', 'y_position', 'icon', 'color',
+            'id', 'name', 'description', 'map',
+            'layer_id', 'layer_name', 'layer_color', 'display_color',
+            'x_position', 'y_position', 'icon', 'color',
             'created_at', 'updated_at'
         ]
 
@@ -105,8 +97,10 @@ class SharedMapSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SharedMap
-        fields = ['id', 'map', 'map_name', 'shared_with', 'shared_with_id', 'shared_by', 'permission', 'created_at',
-                  'updated_at']
+        fields = [
+            'id', 'map', 'map_name', 'shared_with', 'shared_with_id',
+            'shared_by', 'permission', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['created_at', 'updated_at', 'shared_by']
 
     def create(self, validated_data):
@@ -131,8 +125,10 @@ class MapListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Map
-        fields = ['id', 'name', 'description', 'file', 'file_type', 'owner', 'is_public', 'poi_count', 'layer_count',
-                  'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'file', 'file_type', 'owner',
+            'is_public', 'poi_count', 'layer_count', 'created_at', 'updated_at'
+        ]
 
     def get_layer_count(self, obj):
         return obj.layers.count()
