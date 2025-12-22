@@ -65,7 +65,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'interactive_map_db',
         'USER': 'postgres',
-        'PASSWORD': '97867564',
+        'PASSWORD': '',
         'HOST': 'localhost',
         'PORT': '5432',
     }
