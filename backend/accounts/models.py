@@ -4,7 +4,7 @@ Models for the accounts app.
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save, pre_delete
 from django.dispatch import receiver
 
 
@@ -34,12 +34,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-    def delete(self, *args, **kwargs):
-        # Delete profile picture file when profile is deleted
-        if self.profile_picture:
-            self.profile_picture.delete(save=False)
-        super().delete(*args, **kwargs)
-
 
 # Signal to create UserProfile when User is created
 @receiver(post_save, sender=User)
@@ -52,3 +46,29 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+
+# Signal to delete old profile picture when a new one is uploaded
+@receiver(pre_save, sender=UserProfile)
+def delete_old_profile_picture(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # New instance, no old file to delete
+
+    try:
+        old_instance = UserProfile.objects.get(pk=instance.pk)
+    except UserProfile.DoesNotExist:
+        return
+
+    old_file = old_instance.profile_picture
+    new_file = instance.profile_picture
+
+    # If there was an old file and it's different from the new one, delete it
+    if old_file and old_file != new_file:
+        old_file.delete(save=False)
+
+
+# Signal to delete profile picture when profile is deleted
+@receiver(pre_delete, sender=UserProfile)
+def delete_profile_picture_on_delete(sender, instance, **kwargs):
+    if instance.profile_picture:
+        instance.profile_picture.delete(save=False)

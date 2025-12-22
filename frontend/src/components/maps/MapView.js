@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { mapsApi } from '../../api';
 import PoiModal from './PoiModal';
 import PoiList from './PoiList';
@@ -10,6 +11,7 @@ import './Maps.css';
 const MapView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const mapContainerRef = useRef(null);
   const mapContentRef = useRef(null);
   const fullscreenContainerRef = useRef(null);
@@ -44,7 +46,7 @@ const MapView = () => {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const MIN_ZOOM = 1;
-  const MAX_ZOOM = 25;
+  const MAX_ZOOM = 5;
   const ZOOM_STEP = 0.1;
 
   useEffect(() => {
@@ -534,6 +536,7 @@ const MapView = () => {
         <ShareModal
           mapId={id}
           mapName={map.name}
+          isOwner={map.owner?.id === user?.id}
           onClose={() => setShowShareModal(false)}
         />
       )}

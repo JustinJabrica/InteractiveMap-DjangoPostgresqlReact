@@ -13,7 +13,8 @@ const accountsApi = {
   },
 
   logout: async () => {
-    const response = await api.post('/accounts/logout/');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const response = await api.post('/accounts/logout/', { refresh: refreshToken });
     return response.data;
   },
 

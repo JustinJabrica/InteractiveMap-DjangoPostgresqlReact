@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { mapsApi } from '../../api/';
+import { mapsApi } from '../../api';
 import './Maps.css';
 
 const MapList = () => {
   const [maps, setMaps] = useState([]);
   const [sharedMaps, setSharedMaps] = useState([]);
+  const [publicMaps, setPublicMaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('my-maps');
@@ -18,12 +19,14 @@ const MapList = () => {
   const loadMaps = async () => {
     try {
       setLoading(true);
-      const [myMapsData, sharedMapsData] = await Promise.all([
+      const [myMapsData, sharedMapsData, publicMapsData] = await Promise.all([
         mapsApi.maps.myMaps(),
         mapsApi.maps.sharedWithMe(),
+        mapsApi.maps.publicMaps(),
       ]);
       setMaps(myMapsData.results || myMapsData);
       setSharedMaps(sharedMapsData.results || sharedMapsData);
+      setPublicMaps(publicMapsData.results || publicMapsData);
     } catch (err) {
       setError('Failed to load maps');
     } finally {
@@ -47,7 +50,39 @@ const MapList = () => {
     }
   };
 
-  const displayMaps = activeTab === 'my-maps' ? maps : sharedMaps;
+  const getDisplayMaps = () => {
+    switch (activeTab) {
+      case 'shared':
+        return sharedMaps;
+      case 'public':
+        return publicMaps;
+      default:
+        return maps;
+    }
+  };
+
+  const getEmptyMessage = () => {
+    switch (activeTab) {
+      case 'shared':
+        return {
+          title: 'No shared maps',
+          description: 'Maps shared with you will appear here',
+        };
+      case 'public':
+        return {
+          title: 'No public maps',
+          description: 'Public maps from other users will appear here',
+        };
+      default:
+        return {
+          title: 'No maps yet',
+          description: 'Create your first map to get started',
+        };
+    }
+  };
+
+  const displayMaps = getDisplayMaps();
+  const emptyMessage = getEmptyMessage();
 
   if (loading) {
     return (
@@ -81,17 +116,19 @@ const MapList = () => {
         >
           Shared with Me ({sharedMaps.length})
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'public' ? 'active' : ''}`}
+          onClick={() => setActiveTab('public')}
+        >
+          Public Maps ({publicMaps.length})
+        </button>
       </div>
 
       {displayMaps.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🗺️</div>
-          <h3>{activeTab === 'my-maps' ? 'No maps yet' : 'No shared maps'}</h3>
-          <p>
-            {activeTab === 'my-maps'
-              ? 'Create your first map to get started'
-              : 'Maps shared with you will appear here'}
-          </p>
+          <h3>{emptyMessage.title}</h3>
+          <p>{emptyMessage.description}</p>
           {activeTab === 'my-maps' && (
             <button className="btn-primary" onClick={() => navigate('/maps/new')}>
               Create Map
@@ -111,9 +148,15 @@ const MapList = () => {
                     <span>PDF</span>
                   </div>
                 )}
+                {map.is_public && activeTab === 'my-maps' && (
+                  <span className="public-badge" title="This map is public">🌐</span>
+                )}
               </div>
               <div className="map-card-content">
                 <h3>{map.name}</h3>
+                {activeTab === 'public' && (
+                  <p className="map-owner">by {map.owner?.username || 'Unknown'}</p>
+                )}
                 <p className="map-description">{map.description || 'No description'}</p>
                 <div className="map-meta">
                   <span className="poi-count">{map.poi_count} points</span>

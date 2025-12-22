@@ -5,6 +5,8 @@ Implements Map, MapLayer, PointOfInterest, and SharedMap models.
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import pre_save, pre_delete
+from django.dispatch import receiver
 
 
 def map_file_path(instance, filename):
@@ -35,15 +37,35 @@ class Map(models.Model):
     def __str__(self):
         return f"{self.name} - {self.owner.username}"
 
-    def delete(self, *args, **kwargs):
-        # Delete file when map is deleted
-        if self.file:
-            self.file.delete(save=False)
-        super().delete(*args, **kwargs)
-
     @property
     def poi_count(self):
         return self.points_of_interest.count()
+
+
+# Signal to delete old map file when a new one is uploaded
+@receiver(pre_save, sender=Map)
+def delete_old_map_file(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # New instance, no old file to delete
+
+    try:
+        old_instance = Map.objects.get(pk=instance.pk)
+    except Map.DoesNotExist:
+        return
+
+    old_file = old_instance.file
+    new_file = instance.file
+
+    # If there was an old file and it's different from the new one, delete it
+    if old_file and old_file != new_file:
+        old_file.delete(save=False)
+
+
+# Signal to delete map file when map is deleted
+@receiver(pre_delete, sender=Map)
+def delete_map_file_on_delete(sender, instance, **kwargs):
+    if instance.file:
+        instance.file.delete(save=False)
 
 
 class MapLayer(models.Model):

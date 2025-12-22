@@ -211,5 +211,6 @@ yarn-error.log*
 **/venv
 
 # all __pycache__ files
-
 __pycache__/
+
+.env/

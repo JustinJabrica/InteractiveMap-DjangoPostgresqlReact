@@ -90,7 +90,8 @@ class SharedMapSerializer(serializers.ModelSerializer):
     shared_with_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         source='shared_with',
-        write_only=True
+        write_only=True,
+        required=False
     )
     shared_by = UserMinimalSerializer(read_only=True)
     map_name = serializers.CharField(source='map.name', read_only=True)
@@ -108,13 +109,36 @@ class SharedMapSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def validate(self, data):
-        # Can't share with yourself
-        if data['shared_with'] == self.context['request'].user:
-            raise serializers.ValidationError("You cannot share a map with yourself.")
-        # Check if already shared
-        if SharedMap.objects.filter(map=data['map'], shared_with=data['shared_with']).exists():
-            raise serializers.ValidationError("This map is already shared with this user.")
+        # Only validate shared_with during creation (when it's present)
+        shared_with = data.get('shared_with')
+        map_obj = data.get('map') or (self.instance.map if self.instance else None)
+
+        if shared_with:
+            # Can't share with yourself
+            if shared_with == self.context['request'].user:
+                raise serializers.ValidationError("You cannot share a map with yourself.")
+
+            # Check if already shared (only on create, not update)
+            if not self.instance and map_obj:
+                if SharedMap.objects.filter(map=map_obj, shared_with=shared_with).exists():
+                    raise serializers.ValidationError("This map is already shared with this user.")
+
         return data
+
+
+class SharedMapUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating SharedMap permission only."""
+    shared_with = UserMinimalSerializer(read_only=True)
+    shared_by = UserMinimalSerializer(read_only=True)
+    map_name = serializers.CharField(source='map.name', read_only=True)
+
+    class Meta:
+        model = SharedMap
+        fields = [
+            'id', 'map', 'map_name', 'shared_with',
+            'shared_by', 'permission', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'map', 'map_name', 'shared_with', 'shared_by', 'created_at', 'updated_at']
 
 
 class MapListSerializer(serializers.ModelSerializer):

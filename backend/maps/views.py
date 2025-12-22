@@ -19,7 +19,8 @@ from .serializers import (
     MapLayerSerializer,
     PointOfInterestSerializer,
     PointOfInterestListSerializer,
-    SharedMapSerializer
+    SharedMapSerializer,
+    SharedMapUpdateSerializer
 )
 
 
@@ -44,11 +45,12 @@ class MapViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Include owned maps and shared maps
+        # Include owned maps, shared maps, and public maps
         owned_maps = Map.objects.filter(owner=user)
         shared_map_ids = SharedMap.objects.filter(shared_with=user).values_list('map_id', flat=True)
         shared_maps = Map.objects.filter(id__in=shared_map_ids)
-        return (owned_maps | shared_maps).distinct()
+        public_maps = Map.objects.filter(is_public=True)
+        return (owned_maps | shared_maps | public_maps).distinct()
 
     def perform_destroy(self, instance):
         # Only owner can delete
@@ -125,15 +127,16 @@ class MapLayerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Get layers from owned maps and shared maps with edit permission
+        # Get layers from owned maps, shared maps with edit permission, and public maps (view only)
         owned_map_ids = Map.objects.filter(owner=user).values_list('id', flat=True)
         editable_shared_map_ids = SharedMap.objects.filter(
             shared_with=user,
             permission__in=['edit', 'admin']
         ).values_list('map_id', flat=True)
+        public_map_ids = Map.objects.filter(is_public=True).values_list('id', flat=True)
 
         queryset = MapLayer.objects.filter(
-            Q(map_id__in=owned_map_ids) | Q(map_id__in=editable_shared_map_ids)
+            Q(map_id__in=owned_map_ids) | Q(map_id__in=editable_shared_map_ids) | Q(map_id__in=public_map_ids)
         )
 
         # Filter by map if provided
@@ -181,12 +184,13 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Get POIs from owned maps and shared maps
+        # Get POIs from owned maps, shared maps, and public maps
         owned_map_ids = Map.objects.filter(owner=user).values_list('id', flat=True)
         shared_map_ids = SharedMap.objects.filter(shared_with=user).values_list('map_id', flat=True)
+        public_map_ids = Map.objects.filter(is_public=True).values_list('id', flat=True)
 
         queryset = PointOfInterest.objects.filter(
-            Q(map_id__in=owned_map_ids) | Q(map_id__in=shared_map_ids)
+            Q(map_id__in=owned_map_ids) | Q(map_id__in=shared_map_ids) | Q(map_id__in=public_map_ids)
         )
 
         # Filter by map if provided
@@ -257,8 +261,12 @@ class SharedMapViewSet(viewsets.ModelViewSet):
     ViewSet for SharedMap model.
     Full CRUD for managing map sharing.
     """
-    serializer_class = SharedMapSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return SharedMapUpdateSerializer
+        return SharedMapSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -301,6 +309,19 @@ class SharedWithMeView(generics.ListAPIView):
             shared_with=self.request.user
         ).values_list('map_id', flat=True)
         return Map.objects.filter(id__in=shared_map_ids)
+
+
+class PublicMapsView(generics.ListAPIView):
+    """
+    List all public maps (excluding user's own maps).
+    GET /api/maps/public/
+    """
+    serializer_class = MapListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Return public maps, excluding the user's own maps
+        return Map.objects.filter(is_public=True).exclude(owner=self.request.user)
 
 
 class MyMapsView(generics.ListAPIView):

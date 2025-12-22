@@ -18,6 +18,11 @@ const mapsApi = {
       return response.data;
     },
 
+    publicMaps: async () => {
+      const response = await api.get('/maps/public/');
+      return response.data;
+    },
+
     get: async (id) => {
       const response = await api.get(`/maps/maps/${id}/`);
       return response.data;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { mapsApi, accountsApi } from '../../api';
 import './Maps.css';
 
-const ShareModal = ({ mapId, mapName, onClose }) => {
+const ShareModal = ({ mapId, mapName, isOwner = true, onClose }) => {
   const [sharedWith, setSharedWith] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -101,7 +101,7 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Share "{mapName}"</h2>
+          <h2>{isOwner ? `Share "${mapName}"` : `"${mapName}" - Shared Users`}</h2>
           <button className="modal-close" onClick={onClose}>
             ✕
           </button>
@@ -110,84 +110,86 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
-        <div className="share-form">
-          <div className="share-search">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search users by username..."
-              className="share-search-input"
-            />
-            {searching && <span className="searching">Searching...</span>}
+        {isOwner && (
+          <div className="share-form">
+            <div className="share-search">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search users by username..."
+                className="share-search-input"
+              />
+              {searching && <span className="searching">Searching...</span>}
 
-            {searchResults.length > 0 && !selectedUser && (
-              <div className="search-results">
-                {searchResults.map((user) => (
-                  <div
-                    key={user.id}
-                    className="search-result-item"
+              {searchResults.length > 0 && !selectedUser && (
+                <div className="search-results">
+                  {searchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      className="search-result-item"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setSearchTerm(user.username);
+                        setSearchResults([]);
+                      }}
+                    >
+                      <span className="user-avatar">
+                        {user.username.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="user-info">
+                        <span className="user-name">{user.username}</span>
+                        <span className="user-email">{user.email}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {searchTerm.length >= 2 && searchResults.length === 0 && !searching && !selectedUser && (
+                <div className="no-results">
+                  No users found matching "{searchTerm}"
+                </div>
+              )}
+            </div>
+
+            {selectedUser && (
+              <div className="selected-user">
+                <div className="selected-user-info">
+                  <span className="user-avatar">
+                    {selectedUser.username.charAt(0).toUpperCase()}
+                  </span>
+                  <span>{selectedUser.username}</span>
+                  <button
+                    className="btn-clear"
                     onClick={() => {
-                      setSelectedUser(user);
-                      setSearchTerm(user.username);
-                      setSearchResults([]);
+                      setSelectedUser(null);
+                      setSearchTerm('');
                     }}
                   >
-                    <span className="user-avatar">
-                      {user.username.charAt(0).toUpperCase()}
-                    </span>
-                    <div className="user-info">
-                      <span className="user-name">{user.username}</span>
-                      <span className="user-email">{user.email}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {searchTerm.length >= 2 && searchResults.length === 0 && !searching && !selectedUser && (
-              <div className="no-results">
-                No users found matching "{searchTerm}"
+                    ✕
+                  </button>
+                </div>
+                <select
+                  value={permission}
+                  onChange={(e) => setPermission(e.target.value)}
+                  className="permission-select"
+                >
+                  <option value="view">View Only</option>
+                  <option value="edit">Can Edit</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button
+                  className="btn-primary"
+                  onClick={handleShare}
+                  disabled={loading}
+                >
+                  {loading ? 'Sharing...' : 'Share'}
+                </button>
               </div>
             )}
           </div>
-
-          {selectedUser && (
-            <div className="selected-user">
-              <div className="selected-user-info">
-                <span className="user-avatar">
-                  {selectedUser.username.charAt(0).toUpperCase()}
-                </span>
-                <span>{selectedUser.username}</span>
-                <button
-                  className="btn-clear"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setSearchTerm('');
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-              <select
-                value={permission}
-                onChange={(e) => setPermission(e.target.value)}
-                className="permission-select"
-              >
-                <option value="view">View Only</option>
-                <option value="edit">Can Edit</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button
-                className="btn-primary"
-                onClick={handleShare}
-                disabled={loading}
-              >
-                {loading ? 'Sharing...' : 'Share'}
-              </button>
-            </div>
-          )}
-        </div>
+        )}
 
         <div className="shared-users">
           <h3>Shared with ({sharedWith.length})</h3>
@@ -206,22 +208,32 @@ const ShareModal = ({ mapId, mapName, onClose }) => {
                       <span className="user-email">{share.shared_with.email}</span>
                     </div>
                   </div>
-                  <select
-                    value={share.permission}
-                    onChange={(e) => handleUpdatePermission(share.id, e.target.value)}
-                    className="permission-select"
-                  >
-                    <option value="view">View Only</option>
-                    <option value="edit">Can Edit</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    className="btn-icon-sm btn-danger-icon"
-                    onClick={() => handleRemoveShare(share.id)}
-                    title="Remove access"
-                  >
-                    🗑️
-                  </button>
+                  {isOwner ? (
+                    <>
+                      <select
+                        value={share.permission}
+                        onChange={(e) => handleUpdatePermission(share.id, e.target.value)}
+                        className="permission-select"
+                      >
+                        <option value="view">View Only</option>
+                        <option value="edit">Can Edit</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        className="btn-icon-sm btn-danger-icon"
+                        onClick={() => handleRemoveShare(share.id)}
+                        title="Remove access"
+                      >
+                        🗑️
+                      </button>
+                    </>
+                  ) : (
+                    <span className="permission-badge">
+                      {share.permission === 'view' && 'View Only'}
+                      {share.permission === 'edit' && 'Can Edit'}
+                      {share.permission === 'admin' && 'Admin'}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

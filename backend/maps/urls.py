@@ -10,6 +10,7 @@ from .views import (
     PointOfInterestViewSet,
     SharedMapViewSet,
     SharedWithMeView,
+    PublicMapsView,
     MyMapsView
 )
 
@@ -22,5 +23,6 @@ router.register(r'shared', SharedMapViewSet, basename='shared')
 urlpatterns = [
     path('', include(router.urls)),
     path('shared-with-me/', SharedWithMeView.as_view(), name='shared-with-me'),
+    path('public/', PublicMapsView.as_view(), name='public-maps'),
     path('my-maps/', MyMapsView.as_view(), name='my-maps'),
 ]
