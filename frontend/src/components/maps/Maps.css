@@ -1416,6 +1416,15 @@
   font-size: 14px;
 }
 
+.permission-badge {
+  padding: 6px 12px;
+  background: #f0f0f0;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
 .shared-users {
   padding: 20px 25px;
 }

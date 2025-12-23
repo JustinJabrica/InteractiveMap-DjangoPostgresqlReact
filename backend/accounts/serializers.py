@@ -7,14 +7,13 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from .models import UserProfile
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom JWT token serializer that includes user data."""
 
     @classmethod
-    def get_token(cls, user):
+    def get_token(cls, user):  # type: ignore[override]
         token = super().get_token(user)
 
         # Add custom claims to the token
@@ -23,16 +22,16 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return token
 
-    def validate(self, attrs):
+    def validate(self, attrs):  # type: ignore[override]
         data = super().validate(attrs)
 
         # Add user data to the response
-        data['user'] = {
-            'id': self.user.id,
-            'username': self.user.username,
-            'email': self.user.email,
-            'first_name': self.user.first_name,
-            'last_name': self.user.last_name,
+        data['user'] = {  # type: ignore[assignment]
+            'id': self.user.id,  # type: ignore[union-attr]
+            'username': self.user.username,  # type: ignore[union-attr]
+            'email': self.user.email,  # type: ignore[union-attr]
+            'first_name': self.user.first_name,  # type: ignore[union-attr]
+            'last_name': self.user.last_name,  # type: ignore[union-attr]
         }
 
         return data

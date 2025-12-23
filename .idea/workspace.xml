@@ -5,31 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="757e7245-e806-41ff-84d1-d306708388c6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/InteractiveMap-DjangoPostgresqlReact.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/populateusers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/accounts/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/accounts/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/accounts/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/tests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/backend/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/backend/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/maps/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/maps/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/maps/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/backend/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/backend/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/manage.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/manage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/maps/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/maps/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/api/accounts.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/accounts.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/api/axios.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/axios.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/api/maps.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/maps.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/auth/Login.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/auth/Login.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/auth/Register.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/auth/Register.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/ProtectedRoute.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/ProtectedRoute.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/MapList.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/MapList.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/Dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/Navbar.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/Navbar.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/LayerPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/LayerPanel.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/MapEdit.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/MapEdit.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/MapView.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/MapView.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/Maps.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/Maps.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/PoiModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/PoiModal.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/ShareModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/ShareModal.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/context/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/context/AuthContext.js" afterDir="false" />
     </list>
@@ -48,23 +42,23 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="37DFAIGwWPe7Rk8y8hPEV35xkmW" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python tests.Python tests in tests.py.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.Python tests in tests.py.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -86,7 +80,7 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/backend/accounts/migrations/0001_initial.py</url>
+          <url>file://$PROJECT_DIR$/backend/manage.py</url>
           <line>2</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>

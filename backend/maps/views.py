@@ -24,10 +24,36 @@ from .serializers import (
 )
 
 
+def get_user_map_permission(user, map_obj):
+    """
+    Get the user's permission level for a map.
+    Returns: 'owner', 'admin', 'edit', 'view', or None
+    """
+    if user.is_superuser:
+        return 'owner'  # Superusers have owner-level access
+    if map_obj.owner == user:
+        return 'owner'
+
+    shared = SharedMap.objects.filter(map=map_obj, shared_with=user).first()
+    if shared:
+        return shared.permission
+
+    if map_obj.is_public and not (user.is_superuser or (map_obj.owner == user)):
+        return 'view'
+
+    return None
+
+
 class MapViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Map model.
     Full CRUD: list, create, retrieve, update, destroy
+
+    Permissions:
+    - owner/superuser: full access (edit, delete, share, manage permissions)
+    - admin: can edit map, add/edit/delete POIs, share (but not change permissions)
+    - edit: can edit map, add/edit POIs, share (but not change permissions)
+    - view: read only
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
@@ -52,11 +78,30 @@ class MapViewSet(viewsets.ModelViewSet):
         public_maps = Map.objects.filter(is_public=True)
         return (owned_maps | shared_maps | public_maps).distinct()
 
-    def perform_destroy(self, instance):
-        # Only owner can delete
-        if instance.owner != self.request.user:
-            raise PermissionError("You do not have permission to delete this map.")
-        instance.delete()
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance)
+
+        if permission not in ['owner', 'admin', 'edit']:
+            return Response(
+                {"error": "You do not have permission to edit this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance)
+
+        # Only owner and superuser can delete
+        if permission != 'owner':
+            return Response(
+                {"error": "Only the map owner can delete this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'])
     def pois(self, request, pk=None):
@@ -88,13 +133,32 @@ class MapViewSet(viewsets.ModelViewSet):
         serializer = MapLayerSerializer(layers, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def user_permission(self, request, pk=None):
+        """Get the current user's permission level for this map."""
+        map_obj = self.get_object()
+        permission = get_user_map_permission(request.user, map_obj)
+        return Response({
+            'permission': permission,
+            'can_edit': permission in ['owner', 'admin', 'edit'],
+            'can_delete_map': permission == 'owner',
+            'can_add_poi': permission in ['owner', 'admin', 'edit'],
+            'can_edit_poi': permission in ['owner', 'admin', 'edit'],
+            'can_delete_poi': permission in ['owner', 'admin'],
+            'can_share': permission in ['owner', 'admin', 'edit'],
+            'can_manage_shares': permission == 'owner',
+        })
+
     @action(detail=True, methods=['post'])
     def share(self, request, pk=None):
         """Share a map with another user."""
         map_obj = self.get_object()
-        if map_obj.owner != request.user:
+        permission = get_user_map_permission(request.user, map_obj)
+
+        # edit, admin, and owner can share
+        if permission not in ['owner', 'admin', 'edit']:
             return Response(
-                {"error": "Only the owner can share this map."},
+                {"error": "You do not have permission to share this map."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -117,6 +181,12 @@ class MapLayerViewSet(viewsets.ModelViewSet):
     ViewSet for MapLayer model.
     Layers act as map-specific categories for organizing POIs.
     Full CRUD: list, create, retrieve, update, destroy
+
+    Permissions:
+    - owner/superuser: full access
+    - admin: can add, edit, delete layers
+    - edit: can add, edit layers (no delete)
+    - view: read only
     """
     serializer_class = MapLayerSerializer
     permission_classes = [IsAuthenticated]
@@ -127,16 +197,13 @@ class MapLayerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Get layers from owned maps, shared maps with edit permission, and public maps (view only)
+        # Get layers from owned maps, shared maps, and public maps
         owned_map_ids = Map.objects.filter(owner=user).values_list('id', flat=True)
-        editable_shared_map_ids = SharedMap.objects.filter(
-            shared_with=user,
-            permission__in=['edit', 'admin']
-        ).values_list('map_id', flat=True)
+        shared_map_ids = SharedMap.objects.filter(shared_with=user).values_list('map_id', flat=True)
         public_map_ids = Map.objects.filter(is_public=True).values_list('id', flat=True)
 
         queryset = MapLayer.objects.filter(
-            Q(map_id__in=owned_map_ids) | Q(map_id__in=editable_shared_map_ids) | Q(map_id__in=public_map_ids)
+            Q(map_id__in=owned_map_ids) | Q(map_id__in=shared_map_ids) | Q(map_id__in=public_map_ids)
         )
 
         # Filter by map if provided
@@ -147,29 +214,56 @@ class MapLayerViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        # Verify user has permission to add layers to this map
+        """Create layer - requires edit or admin permission."""
         map_id = request.data.get('map')
         map_obj = get_object_or_404(Map, id=map_id)
+        permission = get_user_map_permission(request.user, map_obj)
 
-        if map_obj.owner != request.user:
-            shared = SharedMap.objects.filter(
-                map=map_obj,
-                shared_with=request.user,
-                permission__in=['edit', 'admin']
-            ).exists()
-            if not shared:
-                return Response(
-                    {"error": "You do not have permission to add layers to this map."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+        if permission not in ['owner', 'admin', 'edit']:
+            return Response(
+                {"error": "You do not have permission to add layers to this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """Update layer - requires edit or admin permission."""
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission not in ['owner', 'admin', 'edit']:
+            return Response(
+                {"error": "You do not have permission to edit layers on this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete layer - requires admin or owner permission."""
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission not in ['owner', 'admin']:
+            return Response(
+                {"error": "You do not have permission to delete layers on this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().destroy(request, *args, **kwargs)
 
 
 class PointOfInterestViewSet(viewsets.ModelViewSet):
     """
     ViewSet for PointOfInterest model.
     Full CRUD: list, create, retrieve, update, destroy
+
+    Permissions:
+    - owner/superuser: full access
+    - admin: can add, edit, delete POIs
+    - edit: can add, edit POIs (no delete)
+    - view: read only
     """
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -206,21 +300,44 @@ class PointOfInterestViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        # Verify user has permission to add POIs to this map
+        """Create POI - requires edit or admin permission."""
         map_id = request.data.get('map')
         map_obj = get_object_or_404(Map, id=map_id)
+        permission = get_user_map_permission(request.user, map_obj)
 
-        if map_obj.owner != request.user:
-            shared = SharedMap.objects.filter(
-                map=map_obj,
-                shared_with=request.user,
-                permission__in=['edit', 'admin']
-            ).exists()
-            if not shared:
-                return Response(
-                    {"error": "You do not have permission to add points to this map."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+        if permission not in ['owner', 'admin', 'edit']:
+            return Response(
+                {"error": "You do not have permission to add points to this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """Update POI - requires edit or admin permission."""
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission not in ['owner', 'admin', 'edit']:
+            return Response(
+                {"error": "You do not have permission to edit points on this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete POI - requires admin or owner permission."""
+        instance = self.get_object()
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission not in ['owner', 'admin']:
+            return Response(
+                {"error": "You do not have permission to delete points on this map."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().destroy(request, *args, **kwargs)
 
         return super().create(request, *args, **kwargs)
 
@@ -260,6 +377,11 @@ class SharedMapViewSet(viewsets.ModelViewSet):
     """
     ViewSet for SharedMap model.
     Full CRUD for managing map sharing.
+
+    Permissions:
+    - owner/superuser: can add shares, update permissions, remove shares
+    - admin/edit: can add shares only
+    - view: no sharing permissions
     """
     permission_classes = [IsAuthenticated]
 
@@ -276,19 +398,23 @@ class SharedMapViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, request, *args, **kwargs):
+        """Remove a share - only owner/superuser can remove shares."""
         instance = self.get_object()
-        # Only map owner or the shared_with user can remove the share
-        if instance.map.owner != request.user and instance.shared_with != request.user:
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission != 'owner':
             return Response(
-                {"error": "You do not have permission to remove this share."},
+                {"error": "Only the map owner can remove shared users."},
                 status=status.HTTP_403_FORBIDDEN
             )
         return super().destroy(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
+        """Update permissions - only owner/superuser can change permissions."""
         instance = self.get_object()
-        # Only map owner can update permissions
-        if instance.map.owner != request.user:
+        permission = get_user_map_permission(request.user, instance.map)
+
+        if permission != 'owner':
             return Response(
                 {"error": "Only the map owner can update sharing permissions."},
                 status=status.HTTP_403_FORBIDDEN

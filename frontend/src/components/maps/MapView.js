@@ -15,12 +15,25 @@ const MapView = () => {
   const mapContainerRef = useRef(null);
   const mapContentRef = useRef(null);
   const fullscreenContainerRef = useRef(null);
+  const initialLoadRef = useRef(true);
 
   const [map, setMap] = useState(null);
   const [pois, setPois] = useState([]);
   const [layers, setLayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // User permissions for this map
+  const [permissions, setPermissions] = useState({
+    permission: null,
+    can_edit: false,
+    can_delete_map: false,
+    can_add_poi: false,
+    can_edit_poi: false,
+    can_delete_poi: false,
+    can_share: false,
+    can_manage_shares: false,
+  });
 
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [showPoiModal, setShowPoiModal] = useState(false);
@@ -49,21 +62,19 @@ const MapView = () => {
   const MAX_ZOOM = 5;
   const ZOOM_STEP = 0.1;
 
-  useEffect(() => {
-    loadMapData();
-  }, [id]);
-
-  const loadMapData = async () => {
+  const loadMapData = useCallback(async () => {
     try {
       setLoading(true);
-      const [mapData, poisData] = await Promise.all([
+      const [mapData, poisData, permissionData] = await Promise.all([
         mapsApi.maps.get(id),
-        mapsApi.maps.getPois(id, sortBy, sortOrder),
+        mapsApi.maps.getPois(id),
+        mapsApi.maps.getUserPermission(id),
       ]);
 
       setMap(mapData);
       setPois(poisData);
       setLayers(mapData.layers || []);
+      setPermissions(permissionData);
 
       // Set all layers visible by default
       const layerIds = new Set((mapData.layers || []).map((l) => l.id));
@@ -74,22 +85,32 @@ const MapView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const loadPois = async () => {
+  const loadPois = useCallback(async () => {
     try {
       const poisData = await mapsApi.maps.getPois(id, sortBy, sortOrder);
       setPois(poisData);
     } catch (err) {
       console.error('Failed to reload POIs', err);
     }
-  };
+  }, [id, sortBy, sortOrder]);
 
+  // Load map data on mount or when id changes
   useEffect(() => {
+    loadMapData();
+  }, [loadMapData]);
+
+  // Reload POIs when sort changes (but not on initial load)
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
+    }
     if (map) {
       loadPois();
     }
-  }, [sortBy, sortOrder]);
+  }, [sortBy, sortOrder, map, loadPois]);
 
   // Handle mouse wheel zoom
   const handleWheel = useCallback((e) => {
@@ -346,13 +367,15 @@ const MapView = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button
-            className={`btn-icon-lg add-poi-btn ${addPoiMode ? 'active' : ''}`}
-            onClick={() => setAddPoiMode(!addPoiMode)}
-            title={addPoiMode ? 'Cancel Adding Point' : 'Add Point of Interest'}
-          >
-            ➕
-          </button>
+          {permissions.can_add_poi && (
+            <button
+              className={`btn-icon-lg add-poi-btn ${addPoiMode ? 'active' : ''}`}
+              onClick={() => setAddPoiMode(!addPoiMode)}
+              title={addPoiMode ? 'Cancel Adding Point' : 'Add Point of Interest'}
+            >
+              ➕
+            </button>
+          )}
           <button
             className={`btn-icon-lg ${showLayers ? 'active' : ''}`}
             onClick={() => setShowLayers(!showLayers)}
@@ -367,20 +390,24 @@ const MapView = () => {
           >
             📋
           </button>
-          <button
-            className="btn-icon-lg"
-            onClick={() => setShowShareModal(true)}
-            title="Share"
-          >
-            🔗
-          </button>
-          <button
-            className="btn-icon-lg"
-            onClick={() => navigate(`/maps/${id}/edit`)}
-            title="Edit Map"
-          >
-            ✏️
-          </button>
+          {permissions.can_share && (
+            <button
+              className="btn-icon-lg"
+              onClick={() => setShowShareModal(true)}
+              title="Share"
+            >
+              🔗
+            </button>
+          )}
+          {permissions.can_edit && (
+            <button
+              className="btn-icon-lg"
+              onClick={() => navigate(`/maps/${id}/edit`)}
+              title="Edit Map"
+            >
+              ✏️
+            </button>
+          )}
         </div>
       </div>
 
@@ -393,6 +420,8 @@ const MapView = () => {
             mapId={id}
             onLayersChange={() => loadMapData()}
             onClose={() => setShowLayers(false)}
+            canEdit={permissions.can_edit_poi}
+            canDelete={permissions.can_delete_poi}
           />
         )}
 
@@ -513,6 +542,8 @@ const MapView = () => {
               setShowPoiModal(true);
             }}
             onClose={() => setShowPoiList(false)}
+            canEdit={permissions.can_edit_poi}
+            canDelete={permissions.can_delete_poi}
           />
         )}
       </div>
@@ -522,13 +553,14 @@ const MapView = () => {
           poi={selectedPoi}
           position={newPoiPosition}
           layers={layers}
-          onSave={handlePoiSave}
-          onDelete={selectedPoi ? () => handlePoiDelete(selectedPoi.id) : null}
+          onSave={permissions.can_edit_poi ? handlePoiSave : null}
+          onDelete={selectedPoi && permissions.can_delete_poi ? () => handlePoiDelete(selectedPoi.id) : null}
           onClose={() => {
             setShowPoiModal(false);
             setSelectedPoi(null);
             setNewPoiPosition(null);
           }}
+          readOnly={!permissions.can_edit_poi}
         />
       )}
 
@@ -536,7 +568,8 @@ const MapView = () => {
         <ShareModal
           mapId={id}
           mapName={map.name}
-          isOwner={map.owner?.id === user?.id}
+          canManageShares={permissions.can_manage_shares}
+          canShare={permissions.can_share}
           onClose={() => setShowShareModal(false)}
         />
       )}

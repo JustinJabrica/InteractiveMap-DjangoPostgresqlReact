@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { mapsApi, accountsApi } from '../../api';
 import './Maps.css';
 
-const ShareModal = ({ mapId, mapName, isOwner = true, onClose }) => {
+const ShareModal = ({ mapId, mapName, canManageShares = false, canShare = true, onClose }) => {
   const [sharedWith, setSharedWith] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -97,11 +97,17 @@ const ShareModal = ({ mapId, mapName, isOwner = true, onClose }) => {
     }
   };
 
+  const getModalTitle = () => {
+    if (canManageShares) return `Share "${mapName}"`;
+    if (canShare) return `Share "${mapName}"`;
+    return `"${mapName}" - Shared Users`;
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{isOwner ? `Share "${mapName}"` : `"${mapName}" - Shared Users`}</h2>
+          <h2>{getModalTitle()}</h2>
           <button className="modal-close" onClick={onClose}>
             ✕
           </button>
@@ -110,7 +116,8 @@ const ShareModal = ({ mapId, mapName, isOwner = true, onClose }) => {
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
-        {isOwner && (
+        {/* Share form - shown if user can share (owner, admin, or edit permission) */}
+        {canShare && (
           <div className="share-form">
             <div className="share-search">
               <input
@@ -208,7 +215,8 @@ const ShareModal = ({ mapId, mapName, isOwner = true, onClose }) => {
                       <span className="user-email">{share.shared_with.email}</span>
                     </div>
                   </div>
-                  {isOwner ? (
+                  {/* Only users who can manage shares can change permissions and remove users */}
+                  {canManageShares ? (
                     <>
                       <select
                         value={share.permission}

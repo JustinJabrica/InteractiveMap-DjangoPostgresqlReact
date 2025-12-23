@@ -3,15 +3,42 @@ import { accountsApi } from '../api';
 
 const AuthContext = createContext(null);
 
+// Parse user from localStorage, clear storage if corrupted
+const getStoredUser = () => {
+  try {
+    const savedUser = localStorage.getItem('user');
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    // If we have a user but missing tokens, clear everything
+    if (savedUser && (!accessToken || !refreshToken)) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      return null;
+    }
+    
+    if (savedUser) {
+      return JSON.parse(savedUser);
+    }
+    return null;
+  } catch (e) {
+    // Corrupted data - clear everything and require re-login
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   // Initialize from localStorage to avoid flash
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(() => getStoredUser());
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('accessToken');
+    // Only authenticated if we have both tokens AND valid user data
+    const hasTokens = !!localStorage.getItem('accessToken') && !!localStorage.getItem('refreshToken');
+    return hasTokens && !!getStoredUser();
   });
 
   const checkAuth = useCallback(async () => {
@@ -43,6 +70,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const response = await accountsApi.login(credentials);
+    
+    // Validate tokens exist before storing
+    if (!response.access || !response.refresh) {
+      throw new Error('Invalid token response from server');
+    }
+    
     // JWT response has access and refresh tokens
     localStorage.setItem('accessToken', response.access);
     localStorage.setItem('refreshToken', response.refresh);
@@ -54,6 +87,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const response = await accountsApi.register(userData);
+    
+    // Validate tokens exist before storing
+    if (!response.tokens?.access || !response.tokens?.refresh) {
+      throw new Error('Invalid token response from server');
+    }
+    
     // JWT response has tokens object with access and refresh
     localStorage.setItem('accessToken', response.tokens.access);
     localStorage.setItem('refreshToken', response.tokens.refresh);

@@ -67,6 +67,12 @@ const mapsApi = {
       return response.data;
     },
 
+    // Get current user's permission level for a map
+    getUserPermission: async (id) => {
+      const response = await api.get(`/maps/maps/${id}/user_permission/`);
+      return response.data;
+    },
+
     share: async (id, shareData) => {
       const response = await api.post(`/maps/maps/${id}/share/`, shareData);
       return response.data;

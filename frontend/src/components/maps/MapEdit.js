@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { mapsApi } from '../../api';
 import './Maps.css';
@@ -13,18 +13,27 @@ const MapEdit = () => {
     is_public: false,
   });
   const [map, setMap] = useState(null);
+  const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadMap();
-  }, [id]);
-
-  const loadMap = async () => {
+  const loadMap = useCallback(async () => {
     try {
-      const mapData = await mapsApi.maps.get(id);
+      const [mapData, permissionData] = await Promise.all([
+        mapsApi.maps.get(id),
+        mapsApi.maps.getUserPermission(id),
+      ]);
+      
+      // Check if user has edit permission
+      if (!permissionData.can_edit) {
+        navigate(`/maps/${id}`, { replace: true });
+        return;
+      }
+      
       setMap(mapData);
+      setPermissions(permissionData);
       setFormData({
         name: mapData.name,
         description: mapData.description || '',
@@ -35,7 +44,11 @@ const MapEdit = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    loadMap();
+  }, [loadMap]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -71,11 +84,13 @@ const MapEdit = () => {
       return;
     }
 
+    setDeleting(true);
     try {
       await mapsApi.maps.delete(id);
       navigate('/maps');
     } catch (err) {
-      setError('Failed to delete map');
+      setError(err.response?.data?.error || 'Failed to delete map');
+      setDeleting(false);
     }
   };
 
@@ -164,13 +179,16 @@ const MapEdit = () => {
         </div>
 
         <div className="form-actions">
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={handleDelete}
-          >
-            Delete Map
-          </button>
+          {permissions?.can_delete_map && (
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete Map'}
+            </button>
+          )}
           <div className="form-actions-right">
             <button
               type="button"

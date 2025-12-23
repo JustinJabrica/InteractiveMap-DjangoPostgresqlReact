@@ -9,6 +9,8 @@ const LayerPanel = ({
   mapId,
   onLayersChange,
   onClose,
+  canEdit = false,
+  canDelete = false,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLayer, setEditingLayer] = useState(null);
@@ -137,85 +139,93 @@ const LayerPanel = ({
               <span className="layer-name">{layer.name}</span>
               <span className="layer-count">({layer.poi_count})</span>
             </label>
-            <div className="layer-actions">
-              <button
-                className="btn-icon-sm"
-                onClick={() => handleEdit(layer)}
-                title="Edit"
-              >
-                ✏️
-              </button>
-              <button
-                className="btn-icon-sm"
-                onClick={() => handleDelete(layer.id)}
-                title="Delete"
-              >
-                🗑️
-              </button>
-            </div>
+            {(canEdit || canDelete) && (
+              <div className="layer-actions">
+                {canEdit && (
+                  <button
+                    className="btn-icon-sm"
+                    onClick={() => handleEdit(layer)}
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    className="btn-icon-sm"
+                    onClick={() => handleDelete(layer.id)}
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {showAddForm ? (
-        <form onSubmit={handleSubmit} className="layer-form">
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Layer/category name"
-              autoFocus
-            />
-          </div>
-          <div className="form-group">
-            <label>Description:</label>
-            <input
-              type="text"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Description (optional)"
-            />
-          </div>
-          <div className="form-group">
-            <label>Color:</label>
-            <div className="color-input-row">
+      {canEdit && (
+        showAddForm ? (
+          <form onSubmit={handleSubmit} className="layer-form">
+            <div className="form-group">
+              <label>Name:</label>
               <input
-                type="color"
-                name="color"
-                value={formData.color}
+                type="text"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
+                placeholder="Layer/category name"
+                autoFocus
               />
-              <span className="color-value">{formData.color}</span>
             </div>
-          </div>
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn-secondary btn-sm"
-              onClick={resetForm}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary btn-sm"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : editingLayer ? 'Update' : 'Add'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          className="btn-add-layer"
-          onClick={() => setShowAddForm(true)}
-        >
-          + Add Layer / Category
-        </button>
+            <div className="form-group">
+              <label>Description:</label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Description (optional)"
+              />
+            </div>
+            <div className="form-group">
+              <label>Color:</label>
+              <div className="color-input-row">
+                <input
+                  type="color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                />
+                <span className="color-value">{formData.color}</span>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={resetForm}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary btn-sm"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : editingLayer ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            className="btn-add-layer"
+            onClick={() => setShowAddForm(true)}
+          >
+            + Add Layer / Category
+          </button>
+        )
       )}
     </div>
   );

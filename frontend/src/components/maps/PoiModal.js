@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Maps.css';
 
-const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose }) => {
+const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose, readOnly = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -56,12 +56,13 @@ const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose }) => 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
 
     if (!formData.name.trim()) {
       setError('Please enter a name');
       return;
     }
+
+    if (!onSave) return;
 
     setLoading(true);
     setError('');
@@ -88,11 +89,23 @@ const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose }) => 
     }
   };
 
+  const getLayerName = () => {
+    if (!formData.layer_id) return 'Uncategorized';
+    const layer = layers.find((l) => l.id === parseInt(formData.layer_id));
+    return layer ? layer.name : 'Uncategorized';
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{poi ? 'Edit Point of Interest' : 'New Point of Interest'}</h2>
+          <h2>
+            {readOnly 
+              ? 'Point of Interest Details' 
+              : poi 
+                ? 'Edit Point of Interest' 
+                : 'New Point of Interest'}
+          </h2>
           <button className="modal-close" onClick={onClose}>
             ✕
           </button>
@@ -100,108 +113,136 @@ const PoiModal = ({ poi, position, layers = [], onSave, onDelete, onClose }) => 
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Name *</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter point name"
-              autoFocus
-              required
-            />
+        {readOnly ? (
+          // Read-only view
+          <div className="poi-details">
+            <div className="detail-row">
+              <label>Name</label>
+              <span>{formData.name}</span>
+            </div>
+            <div className="detail-row">
+              <label>Description</label>
+              <span>{formData.description || 'No description'}</span>
+            </div>
+            <div className="detail-row">
+              <label>Layer / Category</label>
+              <span>{getLayerName()}</span>
+            </div>
+            <div className="detail-row">
+              <label>Marker Color</label>
+              <span className="color-preview" style={{ backgroundColor: getDisplayColor() }}></span>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={onClose}>
+                Close
+              </button>
+            </div>
           </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Add a description..."
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="layer_id">Layer / Category</label>
-            <select
-              id="layer_id"
-              name="layer_id"
-              value={formData.layer_id}
-              onChange={handleChange}
-            >
-              <option value="">Uncategorized</option>
-              {layers.map((layer) => (
-                <option key={layer.id} value={layer.id}>
-                  {layer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="color">Marker Color</label>
-            <div className="color-input-wrapper">
+        ) : (
+          // Editable form
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">Name *</label>
               <input
-                type="color"
-                id="color"
-                name="color"
-                value={getDisplayColor()}
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
+                placeholder="Enter point name"
+                autoFocus
+                required
               />
-              <span className="color-value">{getDisplayColor()}</span>
-              {formData.color && (
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Add a description..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="layer_id">Layer / Category</label>
+              <select
+                id="layer_id"
+                name="layer_id"
+                value={formData.layer_id}
+                onChange={handleChange}
+              >
+                <option value="">Uncategorized</option>
+                {layers.map((layer) => (
+                  <option key={layer.id} value={layer.id}>
+                    {layer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="color">Marker Color</label>
+              <div className="color-input-wrapper">
+                <input
+                  type="color"
+                  id="color"
+                  name="color"
+                  value={getDisplayColor()}
+                  onChange={handleChange}
+                />
+                <span className="color-value">{getDisplayColor()}</span>
+                {formData.color && (
+                  <button
+                    type="button"
+                    className="btn-clear-color"
+                    onClick={() => setFormData({ ...formData, color: '' })}
+                  >
+                    Use layer color
+                  </button>
+                )}
+              </div>
+              <small className="color-hint">
+                {formData.color ? 'Custom color' : 'Using layer color'}
+              </small>
+            </div>
+
+            {position && (
+              <div className="position-info">
+                <span>Position: ({position.x}%, {position.y}%)</span>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              {poi && onDelete && (
                 <button
                   type="button"
-                  className="btn-clear-color"
-                  onClick={() => setFormData({ ...formData, color: '' })}
+                  className="btn-danger"
+                  onClick={handleDelete}
+                  disabled={loading}
                 >
-                  Use layer color
+                  Delete
                 </button>
               )}
+              <div className="modal-actions-right">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={onClose}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Saving...' : poi ? 'Update' : 'Create'}
+                </button>
+              </div>
             </div>
-            <small className="color-hint">
-              {formData.color ? 'Custom color' : 'Using layer color'}
-            </small>
-          </div>
-
-          {position && (
-            <div className="position-info">
-              <span>Position: ({position.x}%, {position.y}%)</span>
-            </div>
-          )}
-
-          <div className="modal-actions">
-            {poi && onDelete && (
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={handleDelete}
-                disabled={loading}
-              >
-                Delete
-              </button>
-            )}
-            <div className="modal-actions-right">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Saving...' : poi ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );

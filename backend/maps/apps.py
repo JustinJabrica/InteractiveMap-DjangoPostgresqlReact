@@ -1,3 +1,7 @@
+"""
+App configuration for maps app.
+"""
+
 from django.apps import AppConfig
 
 
