@@ -5,27 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="757e7245-e806-41ff-84d1-d306708388c6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/populateusers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/InteractiveMap-DjangoPostgresqlReact.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/InteractiveMap-DjangoPostgresqlReact.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/accounts/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/accounts/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/tests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/accounts/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/backend/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/backend/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/backend/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/backend/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/manage.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/manage.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/maps/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/apps.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/maps/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/maps/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/api/maps.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/maps.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/Dashboard.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/Navbar.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/Navbar.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/LayerPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/LayerPanel.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/MapEdit.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/MapEdit.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/MapView.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/MapView.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/Maps.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/Maps.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/PoiModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/PoiModal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/maps/ShareModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/maps/ShareModal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/context/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/context/AuthContext.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,6 +27,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -50,19 +39,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python tests.Python tests in tests.py.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python tests.Python tests in tests.py.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "ai.playground.ignore.import.keys.banner.in.settings": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-7e47963ff851-f0eec537fc84-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.23892.515" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PY-253.29346.142" />
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
       </set>
     </attachedChunks>
   </component>
@@ -73,8 +76,14 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1766429597791</updated>
+      <workItem from="1767683943533" duration="1180000" />
+      <workItem from="1768524691758" duration="4344000" />
+      <workItem from="1769053411903" duration="791000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

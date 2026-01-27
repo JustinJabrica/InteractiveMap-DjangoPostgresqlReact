@@ -59,8 +59,8 @@ const MapView = () => {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const MIN_ZOOM = 1;
-  const MAX_ZOOM = 5;
-  const ZOOM_STEP = 0.1;
+  const MAX_ZOOM = 25;
+  const ZOOM_STEP = 0.2;
 
   const loadMapData = useCallback(async () => {
     try {
