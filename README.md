@@ -456,24 +456,6 @@ The frontend will be available at `http://localhost:3000`
 
 ---
 
-## Requirements Met
-
-This application fulfills the following technical requirements:
-
-| Requirement | Status |
-|-------------|:------:|
-| Django backend with Django REST Framework REST API | ✅ |
-| PostgreSQL database | ✅ |
-| At least 6 separate models with CRUD operations via DRF | ✅ |
-| Django migrations and ORM for database management | ✅ |
-| React frontend | ✅ |
-| Axios for API calls to the backend | ✅ |
-| Most CRUD operations used for most models | ✅ |
-
----
-
-## License
-
 ## License
 
 This project is licensed under the **Polyform Noncommercial License**.
