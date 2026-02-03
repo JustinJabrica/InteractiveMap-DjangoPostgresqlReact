@@ -1,22 +1,46 @@
+/**
+ * MapView.js
+ * 
+ * Main container component for viewing and interacting with maps.
+ * Handles:
+ * - Map data loading and state management
+ * - Zoom and pan functionality
+ * - Fullscreen mode
+ * - Toolbar and side panel management
+ * - Modal coordination (POI, Share)
+ * 
+ * POI rendering is delegated to the PoiLayer component for better
+ * performance and separation of concerns.
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { mapsApi } from '../../api';
+import PoiLayer from './PoiLayer';
 import PoiModal from './PoiModal';
 import PoiList from './PoiList';
 import LayerPanel from './LayerPanel';
 import ShareModal from './ShareModal';
 import './Maps.css';
 
+// Zoom constants
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 25;
+const ZOOM_STEP = 0.25;
+
 const MapView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Refs
   const mapContainerRef = useRef(null);
   const mapContentRef = useRef(null);
   const fullscreenContainerRef = useRef(null);
   const initialLoadRef = useRef(true);
 
+  // Core data state
   const [map, setMap] = useState(null);
   const [pois, setPois] = useState([]);
   const [layers, setLayers] = useState([]);
@@ -35,21 +59,25 @@ const MapView = () => {
     can_manage_shares: false,
   });
 
+  // POI interaction state
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [showPoiModal, setShowPoiModal] = useState(false);
   const [newPoiPosition, setNewPoiPosition] = useState(null);
+  const [addPoiMode, setAddPoiMode] = useState(false);
+
+  // Panel visibility state
   const [showPoiList, setShowPoiList] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Layer visibility state
   const [visibleLayers, setVisibleLayers] = useState(new Set());
 
+  // Sorting state
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Add POI mode
-  const [addPoiMode, setAddPoiMode] = useState(false);
-
-  // Fullscreen mode
+  // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Zoom and pan state
@@ -58,9 +86,7 @@ const MapView = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
-  const MIN_ZOOM = 1;
-  const MAX_ZOOM = 25;
-  const ZOOM_STEP = 0.2;
+  // ==================== DATA LOADING ====================
 
   const loadMapData = useCallback(async () => {
     try {
@@ -112,7 +138,8 @@ const MapView = () => {
     }
   }, [sortBy, sortOrder, map, loadPois]);
 
-  // Handle mouse wheel zoom
+  // ==================== ZOOM HANDLING ====================
+
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     
@@ -155,7 +182,23 @@ const MapView = () => {
     }
   }, [handleWheel]);
 
-  // Handle pan start
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    setZoom(Math.min(MAX_ZOOM, zoom + ZOOM_STEP * 2));
+  }, [zoom]);
+
+  const zoomOut = useCallback(() => {
+    const newZoom = Math.max(MIN_ZOOM, zoom - ZOOM_STEP * 2);
+    setZoom(newZoom);
+    if (newZoom === 1) setPan({ x: 0, y: 0 });
+  }, [zoom]);
+
+  // ==================== PAN HANDLING ====================
+
   const handleMouseDown = (e) => {
     // Don't pan if in add POI mode
     if (addPoiMode) return;
@@ -168,7 +211,6 @@ const MapView = () => {
     }
   };
 
-  // Handle pan move
   const handleMouseMove = useCallback((e) => {
     if (isPanning) {
       const newPanX = e.clientX - panStart.x;
@@ -188,10 +230,9 @@ const MapView = () => {
     }
   }, [isPanning, panStart, zoom]);
 
-  // Handle pan end
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsPanning(false);
-  };
+  }, []);
 
   // Add mouse move/up listeners for panning
   useEffect(() => {
@@ -203,9 +244,10 @@ const MapView = () => {
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isPanning, handleMouseMove]);
+  }, [isPanning, handleMouseMove, handleMouseUp]);
 
-  // Handle escape key to exit add POI mode
+  // ==================== KEYBOARD HANDLING ====================
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && addPoiMode) {
@@ -216,7 +258,8 @@ const MapView = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [addPoiMode]);
 
-  // Fullscreen handling
+  // ==================== FULLSCREEN HANDLING ====================
+
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       fullscreenContainerRef.current?.requestFullscreen().catch(err => {
@@ -227,7 +270,6 @@ const MapView = () => {
     }
   }, []);
 
-  // Listen for fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -237,9 +279,11 @@ const MapView = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // ==================== POI HANDLING ====================
+
   const handleMapClick = (e) => {
     if (isPanning) return;
-    if (!addPoiMode) return; // Only add POI when in add mode
+    if (!addPoiMode) return;
     if (!mapContentRef.current) return;
 
     const rect = mapContentRef.current.getBoundingClientRect();
@@ -251,18 +295,17 @@ const MapView = () => {
       setNewPoiPosition({ x: x.toFixed(3), y: y.toFixed(3) });
       setSelectedPoi(null);
       setShowPoiModal(true);
-      setAddPoiMode(false); // Exit add mode after placing
+      setAddPoiMode(false);
     }
   };
 
-  const handlePoiClick = (poi, e) => {
-    e.stopPropagation();
+  const handlePoiClick = useCallback((poi, e) => {
     if (isPanning) return;
-    if (addPoiMode) return; // Don't open POI when in add mode
+    if (addPoiMode) return;
     setSelectedPoi(poi);
     setNewPoiPosition(null);
     setShowPoiModal(true);
-  };
+  }, [isPanning, addPoiMode]);
 
   const handlePoiSave = async (poiData) => {
     try {
@@ -277,7 +320,7 @@ const MapView = () => {
         });
       }
       await loadPois();
-      await loadMapData(); // Reload to get updated layer counts
+      await loadMapData();
       setShowPoiModal(false);
       setSelectedPoi(null);
       setNewPoiPosition(null);
@@ -290,7 +333,7 @@ const MapView = () => {
     try {
       await mapsApi.pois.delete(poiId);
       await loadPois();
-      await loadMapData(); // Reload to get updated layer counts
+      await loadMapData();
       setShowPoiModal(false);
       setSelectedPoi(null);
     } catch (err) {
@@ -298,7 +341,15 @@ const MapView = () => {
     }
   };
 
-  const toggleLayerVisibility = (layerId) => {
+  const closePoiModal = useCallback(() => {
+    setShowPoiModal(false);
+    setSelectedPoi(null);
+    setNewPoiPosition(null);
+  }, []);
+
+  // ==================== LAYER HANDLING ====================
+
+  const toggleLayerVisibility = useCallback((layerId) => {
     setVisibleLayers((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(layerId)) {
@@ -308,24 +359,18 @@ const MapView = () => {
       }
       return newSet;
     });
+  }, []);
+
+  // ==================== RENDER HELPERS ====================
+
+  const getCursorClass = () => {
+    if (addPoiMode) return 'add-poi-mode';
+    if (isPanning) return 'panning';
+    if (zoom > 1) return 'zoomed';
+    return '';
   };
 
-  const isPoiVisible = (poi) => {
-    return visibleLayers.has(poi.layer_id || null);
-  };
-
-  const getPoiColor = (poi) => {
-    // Use custom color if set, otherwise use layer color, otherwise default
-    if (poi.color) return poi.color;
-    if (poi.display_color) return poi.display_color;
-    if (poi.layer_color) return poi.layer_color;
-    return '#e74c3c';
-  };
-
-  const resetZoom = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
+  // ==================== LOADING & ERROR STATES ====================
 
   if (loading) {
     return (
@@ -346,16 +391,11 @@ const MapView = () => {
     );
   }
 
-  // Determine cursor class
-  const getCursorClass = () => {
-    if (addPoiMode) return 'add-poi-mode';
-    if (isPanning) return 'panning';
-    if (zoom > 1) return 'zoomed';
-    return '';
-  };
+  // ==================== MAIN RENDER ====================
 
   return (
     <div className={`map-view-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+      {/* Header */}
       <div className="map-view-header">
         <div className="header-left">
           <button className="btn-back" onClick={() => navigate('/maps')}>
@@ -411,7 +451,9 @@ const MapView = () => {
         </div>
       </div>
 
+      {/* Main Content Area */}
       <div className="map-view-content">
+        {/* Layers Panel */}
         {showLayers && (
           <LayerPanel
             layers={layers}
@@ -425,12 +467,13 @@ const MapView = () => {
           />
         )}
 
+        {/* Map Canvas Area */}
         <div className="map-canvas-container" ref={fullscreenContainerRef}>
-          {/* Zoom controls */}
+          {/* Zoom Controls */}
           <div className="zoom-controls">
             <button
               className="zoom-btn"
-              onClick={() => setZoom(Math.min(MAX_ZOOM, zoom + ZOOM_STEP * 2))}
+              onClick={zoomIn}
               title="Zoom In"
             >
               +
@@ -438,11 +481,7 @@ const MapView = () => {
             <span className="zoom-level">{Math.round(zoom * 100)}%</span>
             <button
               className="zoom-btn"
-              onClick={() => {
-                const newZoom = Math.max(MIN_ZOOM, zoom - ZOOM_STEP * 2);
-                setZoom(newZoom);
-                if (newZoom === 1) setPan({ x: 0, y: 0 });
-              }}
+              onClick={zoomOut}
               title="Zoom Out"
             >
               −
@@ -454,7 +493,7 @@ const MapView = () => {
             )}
           </div>
 
-          {/* Fullscreen button */}
+          {/* Fullscreen Button */}
           <button
             className="fullscreen-btn"
             onClick={toggleFullscreen}
@@ -463,13 +502,14 @@ const MapView = () => {
             {isFullscreen ? '⛶' : '⛶'}
           </button>
 
-          {/* Add POI mode indicator */}
+          {/* Add POI Mode Indicator */}
           {addPoiMode && (
             <div className="add-poi-indicator">
               Click on the map to place a point • Press ESC to cancel
             </div>
           )}
 
+          {/* Map Canvas */}
           <div
             ref={mapContainerRef}
             className={`map-canvas ${getCursorClass()}`}
@@ -484,6 +524,7 @@ const MapView = () => {
                 transformOrigin: 'center center',
               }}
             >
+              {/* Map Image/PDF */}
               {map.file_type === 'image' ? (
                 <img src={map.file} alt={map.name} className="map-image" draggable={false} />
               ) : (
@@ -496,26 +537,19 @@ const MapView = () => {
                 </div>
               )}
 
-              {pois.filter(isPoiVisible).map((poi) => (
-                <div
-                  key={poi.id}
-                  className="poi-marker"
-                  style={{
-                    left: `${poi.x_position}%`,
-                    top: `${poi.y_position}%`,
-                    backgroundColor: getPoiColor(poi),
-                    // Counter-scale markers to keep them same size
-                    transform: `translate(-50%, -100%) scale(${1 / zoom})`,
-                  }}
-                  onClick={(e) => handlePoiClick(poi, e)}
-                  title={poi.name}
-                >
-                  <span className="poi-marker-icon">📍</span>
-                  <span className="poi-marker-label">{poi.name}</span>
-                </div>
-              ))}
+              {/* POI Layer - Delegated Component */}
+              <PoiLayer
+                pois={pois}
+                layers={layers}
+                visibleLayers={visibleLayers}
+                zoom={zoom}
+                addPoiMode={addPoiMode}
+                isPanning={isPanning}
+                onPoiClick={handlePoiClick}
+              />
             </div>
 
+            {/* Map Instructions */}
             {!addPoiMode && (
               <div className="map-instructions">
                 {zoom > 1 
@@ -527,6 +561,7 @@ const MapView = () => {
           </div>
         </div>
 
+        {/* POI List Panel */}
         {showPoiList && (
           <PoiList
             pois={pois}
@@ -548,6 +583,7 @@ const MapView = () => {
         )}
       </div>
 
+      {/* POI Modal */}
       {showPoiModal && (
         <PoiModal
           poi={selectedPoi}
@@ -555,15 +591,12 @@ const MapView = () => {
           layers={layers}
           onSave={permissions.can_edit_poi ? handlePoiSave : null}
           onDelete={selectedPoi && permissions.can_delete_poi ? () => handlePoiDelete(selectedPoi.id) : null}
-          onClose={() => {
-            setShowPoiModal(false);
-            setSelectedPoi(null);
-            setNewPoiPosition(null);
-          }}
+          onClose={closePoiModal}
           readOnly={!permissions.can_edit_poi}
         />
       )}
 
+      {/* Share Modal */}
       {showShareModal && (
         <ShareModal
           mapId={id}

@@ -474,7 +474,26 @@ This application fulfills the following technical requirements:
 
 ## License
 
-This project is for educational purposes.
+## License
+
+This project is licensed under the **Polyform Noncommercial License**.
+
+You are free to use, study, modify, and share this software for
+**non-commercial purposes only**.
+
+### ❌ Not Allowed Without Permission
+- Selling the software or derivatives
+- Offering the software as a paid service (SaaS)
+- Deploying the software in environments that require users to pay
+
+### ✅ Commercial Licensing
+Commercial use is available under a separate license.
+If you are interested in deploying this project commercially,
+please contact the author to obtain permission.
+
+See:
+- `LICENSE.md` (PolyForm Noncommercial)
+- `COMMERCIAL_LICENSE.md` (how to get commercial permission)
 
 ---
 

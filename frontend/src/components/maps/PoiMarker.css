@@ -1,0 +1,278 @@
+/**
+ * PoiMarker.css
+ * 
+ * Styles for circular POI markers and hover annotation cards.
+ * Add these styles to your Maps.css file or import separately.
+ */
+
+/* ==================== POI LAYER ==================== */
+
+.poi-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ==================== POI MARKER (Circular) ==================== */
+
+.poi-marker {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 10;
+  /* Remove any default padding/margin */
+  padding: 0;
+  margin: 0;
+}
+
+.poi-marker:focus {
+  outline: none;
+}
+
+.poi-marker:focus .poi-marker-circle {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8),
+              0 0 0 5px currentColor;
+}
+
+/* Circular marker styling */
+.poi-marker-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+              0 1px 3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+/* Inner dot for better visibility */
+.poi-marker-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Hover effect on marker */
+.poi-marker:hover .poi-marker-circle,
+.poi-marker.hovered .poi-marker-circle {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
+              0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Pulse animation for marker */
+.poi-marker-circle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: inherit;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+}
+
+.poi-marker:hover .poi-marker-circle::before,
+.poi-marker.hovered .poi-marker-circle::before {
+  animation: poi-pulse 1.5s ease-out infinite;
+}
+
+@keyframes poi-pulse {
+  0% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.5);
+  }
+}
+
+/* Hide the old icon and label (replaced by annotation) */
+.poi-marker-icon,
+.poi-marker-label {
+  display: none;
+}
+
+/* ==================== ANNOTATION CARD ==================== */
+
+.poi-annotation {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+  animation: annotation-fade-in 0.2s ease-out;
+}
+
+@keyframes annotation-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.poi-annotation-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 180px;
+  max-width: 280px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
+              0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Arrow pointing down to marker */
+.poi-annotation-arrow {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Annotation title */
+.poi-annotation-title {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+/* Category/Layer badge */
+.poi-annotation-category {
+  display: inline-block;
+  background: #f0f4f8;
+  color: #4a5568;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Description text */
+.poi-annotation-description {
+  margin: 0;
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+  word-wrap: break-word;
+  /* Limit description to 3 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==================== DARK MODE SUPPORT ==================== */
+
+@media (prefers-color-scheme: dark) {
+  .poi-annotation-content {
+    background: #2d3748;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .poi-annotation-arrow {
+    border-top-color: #2d3748;
+  }
+
+  .poi-annotation-title {
+    color: #f7fafc;
+  }
+
+  .poi-annotation-category {
+    background: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .poi-annotation-description {
+    color: #a0aec0;
+  }
+}
+
+/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
+
+@media (max-width: 768px) {
+  .poi-marker-circle {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+
+  .poi-marker-inner {
+    width: 6px;
+    height: 6px;
+  }
+
+  .poi-annotation-content {
+    min-width: 150px;
+    max-width: 220px;
+    padding: 10px 12px;
+  }
+
+  .poi-annotation-title {
+    font-size: 13px;
+  }
+
+  .poi-annotation-description {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* ==================== HIGH CONTRAST / ACCESSIBILITY ==================== */
+
+@media (prefers-contrast: high) {
+  .poi-marker-circle {
+    border-width: 4px;
+    border-color: #000;
+  }
+
+  .poi-annotation-content {
+    border-width: 2px;
+    border-color: #000;
+  }
+}
+
+/* ==================== REDUCED MOTION ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .poi-annotation {
+    animation: none;
+  }
+
+  .poi-marker-circle::before {
+    animation: none;
+  }
+
+  .poi-marker-circle {
+    transition: none;
+  }
+}
